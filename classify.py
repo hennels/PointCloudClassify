@@ -8,9 +8,12 @@ import numpy as np
 
 HELP_MESSAGE = """
 classify.py window keyboard controls:
+  Q: Quit
   A: Make the currently selected point bigger.
   Z: Make the currently selected point smaller.
   C: Center the camera view on the currently selected point.
+  U: Undo last classification (lets you reclassify the previous point).
+  S: Show statistics. Prints class counts.
   Spacebar: skip this point (does not add a label for this point).
   0: Classify point as class 0.
   1: Classify point as class 1.
@@ -56,6 +59,8 @@ class PointClassRecorder:
         self.callbacks[ord('A')] = self.scale_up
         self.callbacks[ord('Z')] = self.scale_down
         self.callbacks[ord('C')] = self.center_on_current
+        self.callbacks[ord('U')] = self.undo_point
+        self.callbacks[ord('S')] = self.print_stats
         self.callbacks[ord(' ')] = self.next_point
         print(HELP_MESSAGE)
         o3d.visualization.draw_geometries_with_key_callbacks([self.pcd, self.sphere], self.callbacks)
@@ -85,6 +90,14 @@ class PointClassRecorder:
         self.next_point(vis)
         return True
 
+    def undo_point(self, vis):
+        prev_current, _ = self.data.popitem()
+        self.sphere.translate(-1*self.points[self.current, :])
+        self.current = int(prev_current)
+        self.sphere.translate(self.points[self.current, :])
+        self.center_on_current(vis)
+        return True
+
     def scale_up(self, vis):
         self.sphere.scale(1.1, center=self.points[self.current, :])
         return True
@@ -92,6 +105,17 @@ class PointClassRecorder:
     def scale_down(self, vis):
         self.sphere.scale(0.9, center=self.points[self.current, :])
         return True
+    
+    def print_stats(self, vis):
+        stats = np.zeros(10, dtype=int)
+        for k, v in self.data.items():
+            stats[v] = stats[v] + 1
+        print("Counts for each class are:")
+        for index in range(stats.shape[0]):
+            if stats[index] > 0:
+                print("    Class {}: {}".format(index, stats[index]))
+        print("Done")
+        return False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Classify points of a point cloud')
