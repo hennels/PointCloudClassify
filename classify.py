@@ -91,11 +91,16 @@ class PointClassRecorder:
         return True
 
     def undo_point(self, vis):
-        prev_current, _ = self.data.popitem()
-        self.sphere.translate(-1*self.points[self.current, :])
-        self.current = int(prev_current)
-        self.sphere.translate(self.points[self.current, :])
-        self.center_on_current(vis)
+        try:
+            prev_current, _ = self.data.popitem()
+            self.sphere.translate(-1*self.points[self.current, :])
+            self.current = int(prev_current)
+            self.sphere.translate(self.points[self.current, :])
+            self.center_on_current(vis)
+        except KeyError:
+            print("No actions to undo")
+        except:
+            raise
         return True
 
     def scale_up(self, vis):
