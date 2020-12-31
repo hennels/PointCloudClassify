@@ -10,6 +10,8 @@ if __name__ == "__main__":
                         help='Path to the input point cloud.')
     parser.add_argument('--data_path', default=None, type=str,
                         help='Path to classification file. Default is "path/to/cloud.ply.json".')
+    parser.add_argument('--classes', default=None, type=int, nargs='+',
+                        help='Classes to display.')
     args = parser.parse_args()
     
     # set default path if necessary
@@ -29,13 +31,28 @@ if __name__ == "__main__":
     # load cloud
     cloud = o3d.io.read_point_cloud(args.cloud)
     
+    # create set
+    if args.classes is None:
+        class_set = None
+    else:
+        class_set = set(args.classes)
+    shown_set = set()
+
     # set colors based on label
     cloud_colors = np.asarray(cloud.colors)
     cloud_colors[:, :] = 0.0
     colors = np.random.rand(10, 3)
-    for key, value in data.items():
-        cloud_colors[int(key), :] = colors[value, :]
+    if class_set is None:
+        for key, value in data.items():
+            cloud_colors[int(key), :] = colors[value, :]
+            shown_set.add(value)
+    else:
+        for key, value in data.items():
+            if value in class_set:
+                cloud_colors[int(key), :] = colors[value, :]
+                shown_set.add(value)
     cloud.colors = o3d.utility.Vector3dVector(cloud_colors)
 
     # show
+    print("Classes shown: {}".format(shown_set))
     o3d.visualization.draw_geometries([cloud])
